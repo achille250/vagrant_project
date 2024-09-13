@@ -1,0 +1,59 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby : 
+
+Vagrant.configure("2") do |config|
+  
+  # Web server configuration
+  config.vm.define "web_server" do |web|
+    web.vm.box = "bento/debian-11"
+    web.vm.hostname = "web-server"
+
+    web.vm.provider "vmware_desktop" do |v|
+      v.memory = 2048
+      v.cpus = 2
+      v.gui= true
+    end  
+
+    # Forwarded port for web server
+    web.vm.network "forwarded_port", guest: 80, host: 8080
+
+    # Private network for web server
+    web.vm.network "private_network", ip: "192.168.33.10"
+
+    # Synced folder for web server
+    web.vm.synced_folder ".", "/vagrant"
+
+    # Provision web server (install Nginx)
+    web.vm.provision "shell", inline: <<-SHELL
+      apt-get update
+      apt-get install -y nginx
+    SHELL
+  end
+
+  # Database server configuration
+  config.vm.define "db_server" do |db|
+    db.vm.box = "bento/debian-11"
+    db.vm.hostname = "db-server"
+
+    db.vm.provider "vmware_desktop" do |v|
+      v.memory = 1024
+      v.cpus = 2
+    
+    end  
+
+    # Private network for database server
+    db.vm.network "private_network", ip: "192.168.33.11"
+   
+    # Forwarded port for web server
+    db.vm.network "forwarded_port", guest: 3306, host: 3306
+
+    # Provision database server (install MySQL)
+    db.vm.provision "shell", inline: <<-SHELL
+      apt-get update
+      apt-get install -y mariadb-server
+      sudo systemctl enable mariadb
+      sudo systemctl start mariadb
+    SHELL
+  end
+
+end
